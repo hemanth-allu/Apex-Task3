@@ -1,0 +1,345 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fitness Quiz</title>
+  <style>
+    /* Reset and base */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #e6f2ff;
+      color: #2c3e50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1, h2 {
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      text-align: center;
+      color: #1a5276;
+    }
+
+    /* Quiz container */
+    .quiz-wrapper {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 700px;
+      padding: 40px 30px 50px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: relative;
+    }
+
+    /* Timer */
+    #timer {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #2980b9;
+      user-select: none;
+    }
+
+    /* Question */
+    #question {
+      font-size: 1.3rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    /* Answers: grid with cards */
+    #answers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 10px;
+    }
+
+    /* Answer label styling as cards */
+    #answers label {
+      display: flex;
+      align-items: center;
+      background: #f0f8ff;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      user-select: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    /* Radio inputs hidden */
+    #answers input[type="radio"] {
+      display: none;
+    }
+
+    /* Checked state */
+    #answers input[type="radio"]:checked + span {
+      background: #2980b9;
+      color: white;
+      border-radius: 10px;
+      padding: 6px 10px;
+      transition: background 0.3s ease;
+    }
+
+    /* Hover effect */
+    #answers label:hover {
+      border-color: #2980b9;
+      background: #d6eaf8;
+      box-shadow: 0 4px 12px rgba(41, 128, 185, 0.2);
+    }
+
+    /* Submit button */
+    .btn {
+      align-self: center;
+      background-color: #2980b9;
+      border: none;
+      border-radius: 25px;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 14px 40px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(41, 128, 185, 0.5);
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+
+    .btn:disabled {
+      background-color: #aacde8;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn:hover:not(:disabled) {
+      background-color: #1b4f72;
+    }
+
+    /* Scoreboard */
+    #scoreboard {
+      background: #eaf4fc;
+      border: 3px solid #2980b9;
+      border-radius: 16px;
+      padding: 25px 30px;
+      margin-top: 30px;
+      font-size: 1.1rem;
+      line-height: 1.5;
+      color: #1b4f72;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    #scoreboard h3 {
+      margin-top: 0;
+      color: #1b4f72;
+    }
+
+    /* Joke Section */
+    .joke-wrapper {
+      max-width: 700px;
+      margin-top: 40px;
+      background: #d6eaf8;
+      border-radius: 14px;
+      box-shadow: 0 3px 14px rgba(41, 128, 185, 0.3);
+      padding: 25px 30px;
+      text-align: center;
+      font-style: italic;
+      color: #1b4f72;
+      user-select: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      #answers {
+        grid-template-columns: 1fr;
+      }
+      .quiz-wrapper {
+        padding: 30px 20px 40px;
+      }
+      #timer {
+        top: 15px;
+        right: 20px;
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <section class="quiz-wrapper" aria-label="Fitness Quiz">
+    <h1>Fitness Quiz</h1>
+    <div id="timer" aria-live="polite" aria-atomic="true">Time left: 15:00</div>
+    <div id="question" aria-live="polite" aria-atomic="true">Loading question...</div>
+    <form id="answers" role="radiogroup" aria-labelledby="question"></form>
+    <button class="btn" id="submit-btn" onclick="submitQuiz(event)" disabled>Next</button>
+    <div id="scoreboard" aria-live="polite" role="region" tabindex="0" hidden></div>
+  </section>
+
+  <section class="joke-wrapper" aria-label="Fitness Humor Break">
+    <h2>Fitness Humor Break</h2>
+    <div id="joke-section">Loading a fitness joke...</div>
+  </section>
+
+  <script>
+    const fitnessQuestions = [
+      { question: "What is the primary muscle worked during a squat?", options: ["Biceps", "Quadriceps", "Triceps", "Deltoids"], correct: "Quadriceps" },
+      { question: "How many calories approximately are burned by running one mile?", options: ["50", "100", "150", "200"], correct: "100" },
+      { question: "What does BMI stand for?", options: ["Body Muscle Index", "Body Mass Index", "Basic Metabolism Indicator", "Body Movement Indicator"], correct: "Body Mass Index" },
+      { question: "Which nutrient is most important for muscle repair?", options: ["Carbohydrates", "Proteins", "Fats", "Vitamins"], correct: "Proteins" },
+      { question: "How often should adults aim to do strength training exercises per week?", options: ["1-2 times", "2-3 times", "4-5 times", "Every day"], correct: "2-3 times" },
+      { question: "What is the recommended minimum amount of moderate aerobic activity per week?", options: ["75 minutes", "150 minutes", "225 minutes", "300 minutes"], correct: "150 minutes" },
+      { question: "Which exercise primarily targets the chest muscles?", options: ["Deadlift", "Squat", "Bench Press", "Pull-ups"], correct: "Bench Press" },
+      { question: "What is the best time to stretch muscles?", options: ["Before workout", "After workout", "During workout", "Any time"], correct: "After workout" },
+      { question: "What does HIIT stand for?", options: ["High Intensity Interval Training", "Heavy Intense Isometric Training", "High Impact Interval Training", "Heightened Intensity Interval Technique"], correct: "High Intensity Interval Training" },
+      { question: "Which of these is a cardiovascular exercise?", options: ["Yoga", "Weightlifting", "Swimming", "Stretching"], correct: "Swimming" }
+    ];
+
+    let questions = [];
+    let currentIndex = 0;
+    let userAnswers = Array(10).fill(null);
+    let timer;
+    let timeLeft = 15 * 60;
+
+    const questionEl = document.getElementById('question');
+    const answersEl = document.getElementById('answers');
+    const submitBtn = document.getElementById('submit-btn');
+    const scoreboard = document.getElementById('scoreboard');
+    const timerEl = document.getElementById('timer');
+    const jokeSection = document.getElementById('joke-section');
+
+    function shuffle(array) {
+      return array.sort(() => Math.random() - 0.5);
+    }
+
+    function startTimer() {
+      timer = setInterval(() => {
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          finishQuiz();
+        } else {
+          timeLeft--;
+          const minutes = Math.floor(timeLeft / 60);
+          const seconds = timeLeft % 60;
+          timerEl.textContent = `Time left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+      }, 1000);
+    }
+
+    function loadQuestion() {
+      const q = questions[currentIndex];
+      questionEl.textContent = `Q${currentIndex + 1}. ${q.question}`;
+
+      answersEl.innerHTML = '';
+      q.options.forEach((opt, i) => {
+        const id = `opt-${currentIndex}-${i}`;
+        const checked = userAnswers[currentIndex] === opt ? 'checked' : '';
+        const label = document.createElement('label');
+        label.setAttribute('for', id);
+        label.innerHTML = `
+          <input type="radio" name="answer" id="${id}" value="${opt}" ${checked} aria-checked="${checked ? 'true' : 'false'}" />
+          <span>${opt}</span>
+        `;
+        answersEl.appendChild(label);
+      });
+
+      submitBtn.textContent = currentIndex === questions.length - 1 ? 'Finish' : 'Next';
+      submitBtn.disabled = !userAnswers[currentIndex];
+    }
+
+    answersEl.addEventListener('change', e => {
+      if (e.target.name === 'answer') {
+        userAnswers[currentIndex] = e.target.value;
+        submitBtn.disabled = false;
+      }
+    });
+
+    function submitQuiz(event) {
+      event.preventDefault();
+      if (!userAnswers[currentIndex]) return;
+
+      if (currentIndex < questions.length - 1) {
+        currentIndex++;
+        loadQuestion();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    function finishQuiz() {
+      clearInterval(timer);
+      let correctCount = 0;
+
+      scoreboard.innerHTML = `<h3>Quiz Completed!</h3><p>Your Score: ${correctCount} / ${questions.length}</p><hr>`;
+
+      questions.forEach((q, i) => {
+        const userAnswer = userAnswers[i] || 'No Answer';
+        const correct = q.correct;
+        const isCorrect = userAnswer === correct;
+        if (isCorrect) correctCount++;
+      });
+
+      scoreboard.innerHTML = `<h3>Quiz Completed!</h3><p>Your Score: ${correctCount} / ${questions.length}</p><hr>` + 
+                             questions.map((q,i) => {
+        const userAnswer = userAnswers[i] || 'No Answer';
+        const isCorrect = userAnswer === q.correct;
+        return `<p><strong>Q${i+1}:</strong> ${q.question}<br>
+        Your answer: <span style="color:${isCorrect ? 'green' : 'red'}">${userAnswer}</span><br>
+        Correct answer: <strong>${q.correct}</strong></p><hr>`;
+      }).join('');
+
+      scoreboard.hidden = false;
+      questionEl.hidden = true;
+      answersEl.hidden = true;
+      submitBtn.hidden = true;
+      timerEl.hidden = true;
+      scoreboard.focus();
+    }
+
+     function loadJoke() {
+        const jokes = [
+        "Why don’t some couples go to the gym? Because some relationships don’t work out!",
+        "I do marathons... on Netflix.",
+        "Why did the treadmill break up with the bike? It felt like it was being run over!",
+        "Exercise? I thought you said extra fries!",
+        "I have a condition that prevents me from going to the gym... it's called 'I’d rather stay home.'",
+        "Why was the gym so quiet? Because all the weights were on a break!",
+        "I tried lifting weights, but I think the couch was heavier.",
+        "Running late counts as exercise, right?",
+        "My favorite machine at the gym is the vending machine.",
+       "Some people workout to lose weight, I workout to eat more."
+    ];
+     const randomIndex = Math.floor(Math.random() * jokes.length);
+        jokeSection.textContent = jokes[randomIndex];
+    }
+
+      // Call loadJoke after DOM loads
+        document.addEventListener('DOMContentLoaded', () => {
+        loadJoke();
+     });
+
+    // Initialization
+    (function init() {
+      questions = shuffle(fitnessQuestions).slice(0, 15);
+      loadQuestion();
+      startTimer();
+      loadJoke();
+    })();
+  </script>
+
+</body>
+</html>
